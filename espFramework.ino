@@ -17,10 +17,10 @@ SoftwareSerial esp(rxPin,txPin);
 
 
 
-bool espSend(String cmd, char* replyIfOK) {
+bool espSend(String cmd, String replyIfOK) {
   DEBUGMSG(cmd);
   esp.println(cmd);
-  bool bRetVal = esp.find(replyIfOK);
+  bool bRetVal = esp.find((char*)replyIfOK.c_str());
   DEBUGMSG(bRetVal? "ok" : "err");
   return bRetVal;
 }
@@ -30,30 +30,30 @@ bool espConnectWifi() {
 }
 
 bool espInit() {
-  if (!espSend("AT", (char*)"OK")) return false;
+  if (!espSend("AT", "OK")) return false;
   
   // the esp needs to be in wifi station mode (1). This setting is remembered
   // after a powercycle; so probably already in correct setting. Check this,
   // and set to wifi mode if not yet in it...
-  if (!espSend("AT+CWMODE?", (char*)"CWMODE:1")) {
-    if (!espSend("AT+CWMODE=1", (char*)"OK")) return false;;
+  if (!espSend("AT+CWMODE?", "CWMODE:1")) {
+    if (!espSend("AT+CWMODE=1", "OK")) return false;;
   }
 
   // Check if the esp is already connected to an access point and join the
   // access point (connect to the wifi)
-  if (espSend("AT+CWJAP?", (char*)"No AP")) {
-    if (!espSend(String("AT+CWJAP=\"") + WIFI_SSID + String("\",\"") + WIFI_PWD + String("\""), (char*)"OK")) return false;
+  if (espSend("AT+CWJAP?", "No AP")) {
+    if (!espSend(String("AT+CWJAP=\"") + WIFI_SSID + String("\",\"") + WIFI_PWD + String("\""), "OK")) return false;
   }
 
   // Set transfer mode to normal (0) if not already set so.
   // The transfer mode is remembered after a powercycle, so mostly would be good
-  if (!espSend("AT+CIPMODE?", (char*)"CIPMODE:0")) {
-    if (!espSend("AT+CIPMODE=0", (char*)"OK")) return false;
+  if (!espSend("AT+CIPMODE?", "CIPMODE:0")) {
+    if (!espSend("AT+CIPMODE=0", "OK")) return false;
   }
 
   // To accept multiple IP streams, CIPMUX must be set to 1.
   // This setting is not preserved after a powercycle so must be set each time.
-  if (!espSend("AT+CIPMUX=1", (char*)"OK")) return false;
+  if (!espSend("AT+CIPMUX=1", "OK")) return false;
 
   // if we made it here, the initialization has been successful. 
   return true;
@@ -62,7 +62,7 @@ bool espInit() {
 bool espSendToThingspeak(double temp, double humidity) {
   bool bRetVal = false;
   
-  if (espSend(String("AT+CIPSTART=0,\"TCP\",\"") + THINGSPEAK_IP + String("\",80"), (char*)"0,CONNECT")) {
+  if (espSend(String("AT+CIPSTART=0,\"TCP\",\"") + THINGSPEAK_IP + String("\",80"), "0,CONNECT")) {
 
     String getStr = "GET /update?api_key=";
     getStr += THINGSPEAK_API;
@@ -74,11 +74,11 @@ bool espSendToThingspeak(double temp, double humidity) {
 
     String cmd = "AT+CIPSEND=0,";
     cmd += String(getStr.length());
-    if (espSend(cmd, (char*)">")) {
-      bRetVal = espSend(getStr, (char*)"SEND OK");
+    if (espSend(cmd, ">")) {
+      bRetVal = espSend(getStr, "SEND OK");
     }
   
-    espSend("AT+CIPCLOSE=0", (char*)"0,CLOSED");
+    espSend("AT+CIPCLOSE=0", "0,CLOSED");
   }
 
   return bRetVal;
